@@ -198,5 +198,65 @@ Pre-Compiled SharpUp: https://github.com/r3motecontrol/Ghostpack-CompiledBinarie
 - Running PowerUp
 
 
+
+## 6. Kernal Expploits
+
+- Kernals are the core of any operating system
+- Think of it as a layer between application software and the actual computer hardware.
+- The kernal has complete control over the operating system. Exploiting a kernal vulnerability can result in execution as the SYSTEM user.
+
+
+### 6.1 Finding Kernal exploits
+
+Finding and using kernal exploits is usually a simple process:
+
+1. Enumerate windows version/patch level - can be found in `systeminfo`.
+2. Find matching exploits in `ExploitDB`, `Github`.
+3. Compile and run.
+
+> Kernal exploits can often be unstable and may be one-shot or cause a system crash.
+
+__Tools__
+1. Windows Exploit suggester: (available in metasploit): Takes the output of `systeminfo` command and use it identify relavent exploits
+2. Precompiled kernal exploits: `SecWiki`
+3. Watson (Good for enumerating kernal exploits)
+
+
+
+## 7 Service Exploits
+
+- Services are simply programs that run in the background, accepting input or performing regualr tasks.
+
+- If services run with `SYSTEM` privileges and are misconfigured, exploiting them may lead to command execution with `SYSTEM` privileges as well.
+
+__Service commands :__
+
+- Query the configuration of a service:
+```bash
+sc.exe qc <name>
+```
+- Query the current status of a service:
+```bash
+sc.exe query <name>
+```
+- Modify a configuration option of a service:
+```bash
+sc.exe config <name> <option>= <value>  # note space after option
+```
+- Start/stop a service:
+```bash
+net start/stop  <name>
+```
+
+### 7.1 
+
+__Insecure service permissions__
+- Each service has an ACL which defines certain servcie-specific permissions.
+- Some permissions are innocuos(e.g `SERVICE_QUERY_CONFIG`, `SERVICE_QUERY_STATUS`).
+- Some may be useful (e.g `SERVICE_STOP`, `SERVICE_START`).
+- Some are dangerous(e.g. `SERVICE_CHANGE_CONFIG`, `SERVICE_ALL_ACCESS`).
+ 
+
+
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
