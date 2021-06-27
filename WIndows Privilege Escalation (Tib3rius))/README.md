@@ -1262,7 +1262,22 @@ nt authority\system
 
 
 ## 11. Insecure GUI Apps
+
+- Users could be granted the permissions to run certain GUI apps with administrator privileges. 
+- There are often numerous was to spawn command prompts from withing GUI apps, cincluding using native windows functionality.
+- Since the parent process is running with administartor privilegese, the spawned command prompt will also run with these privileges.
+
+- E.g `mspaint` in our case (start from desktop shortcut)
+- Check the tasklist
+```bash
+C:\DevTools>tasklist /V | findstr mspaint.exe
+mspaint.exe                    236 Console                    2     33,232 K Running         MSEDGEWIN10\admin                                       0:00:01 Untitled - Paint
+```
+- We can see the application is running with admin privileges
 - 
+![ms_paint](assets/ms_paint.PNG)
+- Command prompt with administartor privileges will be opened
+
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 
