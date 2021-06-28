@@ -42,8 +42,9 @@
 
 ## 1.  Setup
 
+0. Downlaod [Windows 10](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/) VM. 
 1. download/use the tools provided , to kali machine
-2. start the smb server in kali (make sure to start in tools folder)
+2. start the smb server(or any file transfer service) in kali (make sure to start in tools folder)
 ```bash
 ─$ sudo python3 /usr/share/doc/python3-impacket/examples/smbserver.py tools .
 [sudo] password for kali: 
