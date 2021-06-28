@@ -536,6 +536,8 @@ nt authority\system
 
 ```
 
+__Mitigations__
+Ensure that any services that contain a space in the path enclose the path in quotes.
 ### 7.3 Weak Registry Permissions
 
 - The windows registry stores entries for each service.
@@ -788,6 +790,9 @@ whoami
 nt authority\system
 ```
 
+__Mitigation__
+- Ideally, the primary line of defense against DLL hijacking needs to originate from the software developers. If programmers use absolute paths to clearly define the expected location of Dynamic Link Libraries in the software code (rather than having the operating system do a default search), the vulnerability can be greatly reduced.
+- Disabling DLL loading from remote network shares, the loading of DLL files from WebDAV, and disabling or manually controlling the WebClient service can set active blocks against hijackers
 
 ## 8.Registry
 
@@ -1098,6 +1103,10 @@ HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\{24954E9B-D39A-4168-A3B2-E5014C94492F}
 C:\PrivEsc>reg query HKCU /f password /t REG_SZ /s
 ```
 
+
+ __Mitigations__
+ 1. Password policies: Do not store credentials within Registry.
+ 2. Privileged Account Management: If it is necessary that software must store credentails in the registry, then ensure the associated accounts have limited permissions so they cannot be abused if obtained by adversary.
 ### 9.2 Saved Creds
 
 - Windows has runas command which allows users to run commands with the privileges of other users.
