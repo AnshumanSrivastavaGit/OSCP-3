@@ -4,4 +4,4 @@
 
 ## Windows Privilege Escalation
 
-[Privilege Escalation for windows OSCP & beyond](WIndows%20Privilege%20Escalation%20(Tib3rius))/README.md)
+[Privilege Escalation for windows OSCP & beyond](WIndows%20Privilege%20Escalation%20\(Tib3rius\))/README.md)
