@@ -30,6 +30,11 @@
   * [11. Insecure GUI Apps](#11-insecure-gui-apps)
   * [12. Starup Apps](#12-starup-apps)
   * [13. Hot Potato](#13-hot-potato)
+  * [14. Named Pipes & Token Impersonation](#14-named-pipes-and-token-impersonation)
+    + [14.1 Access Tokens](#141-access-tokens)
+    + [14.2 Token Duplication](#142-token-duplication)
+    + [14.3 Named Pipes](#143-named-pipes)
+    + [14.4 getsystem](#144-getsystem)
 
 
 
@@ -1405,6 +1410,56 @@ Microsoft Windows [Version 10.0.17763.379]
 
 C:\Windows\system32>
 ```
+
+[More Detailed Explaination](https://foxglovesecurity.com/2016/01/16/hot-potato/)
+
+
+## 14. Named Pipes and Token Impersonation
+
+### 14.1 Access Tokens
+
+- Access Tokens are special objects in windows which stores a user's identity and privileges.
+- Primary Access TOken - create when the user logs in, bound to the current user session. When a user starts a new process, their primary access token is copied and attached to the new process.
+- Impersonation Access Token - create when a process or thread needs to temporarily run with the security context of another user.
+
+### 14.2 Token Duplication
+
+- Windows allows processes/threads to duplicate their access tokens.
+- An impersonation access token can be duplicated into a primary acess token this way.
+- If we can inject into a process, we can use this functionality to duplicate the access token of the process, and spawn a separate process with the same privileges.
+
+### 14.3 Named Pipes
+
+Example: 
+```bash
+> systeminfo | findstr Windows
+```
+- A process can create a named pipe, and other processes can open the names pipe to read or write data from/to it.
+- The process which created the names pipe can impersonate the security context of a process which connects to the named pipe.
+
+### 14.4 getsystem
+
+- `getsystem` - there are 3 techniques that `getsystem` uses to "get system"
+
+__1. Named Pipe impersonation (in memory/admin)__
+- Creates a named pipe controlled by `Meterpreter`.
+- Creates a service (running as `SYSTEM`) which runs a command that directly interacts with the named pipe.
+- Meterpreter then impersonates the connected process to get an impersonation access token(With the `SYSTEM` security context).
+- The access token is then assigned to all subsequent meterpreter threads, meaning they run with `SYSTEM` privileges.
+
+__2. Named Pipe Impersonation (Dropper/Admin)__
+- Similar to inmemory/admin.
+- Only difference is a DLL is written to disk, and a service created which runs the DLL as `SYSTEM`.
+- The DLL connects to the names pipe.
+
+__3. Token Duplication__
+
+- This technique requires the `"SeDebugPrivilge"`. 
+> SeDebugPrivilege allows a process to inspect and adjust the memory of other processes, and has long been a security concern. SeDebugPrivilege allows the token bearer to access any process or thread, regardless of security descriptors.
+- It finds a service running as `SYSTEM` which it injects a DLL into.
+- The DLL duplicates the access token of the service and assigns it to meterpreter.
+- Works only on `x86` architectures.
+- In this technique does not have to create a service, and operates entirely in memory.
 
 
 <br><br/><br><br/><br><br/><br><br/><br><br/><br><br/>
