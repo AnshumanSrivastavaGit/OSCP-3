@@ -1,5 +1,39 @@
-# Windows Privilege Escalation
+- [Windows Privilege Escalation](#windows-privilege-escalation)
+  * [1.  Setup](#1--setup)
+  * [2. Accounts on Windows Machine](#2-accounts-on-windows-machine)
+  * [3. Privilege Escalation in Windows](#3-privilege-escalation-in-windows)
+    + [3.1 Understanding Permissions in Windows](#31-understanding-permissions-in-windows)
+  * [4.Spawning Administrative Shells](#4spawning-administrative-shells)
+    + [4.1 RDP](#41-rdp)
+  * [5. Privilege Escalation tools](#5-privilege-escalation-tools)
+    + [5.1 Why use Tools](#51-why-use-tools)
+    + [5.2 Admin -> System](#52-admin----system)
+      - [5.2.1 PowerUp & SharpUp](#521-powerup---sharpup)
+  * [6. Kernal Expploits](#6-kernal-expploits)
+    + [6.1 Finding Kernal exploits](#61-finding-kernal-exploits)
+  * [7 Service Exploits](#7-service-exploits)
+    + [7.1  Insecure service permissions](#71--insecure-service-permissions)
+    + [7.2  Unquoted Service path](#71--unquoted-service-path)
+    + [7.3 Weak Registry Permissions](#73-weak-registry-permissions)
+    + [7.4 Insecure Service Executables](#74-insecure-service-executables)
+    + [7.5 DLL hijacking](#75-dll-hijacking)
+  * [8.Registry](#8registry)
+    + [8.1 AutoRuns](#81-autoruns)
+    + [8.2 AlwaysInstallElevated](#82-alwaysinstallelevated)
+  * [9. Passwords](#9-passwords)
+    + [9.1 Registry](#91-registry)
+    + [9.2 Saved Creds](#92-saved-creds)
+    + [9.3 Configuration Files](#93-configuration-files)
+    + [9.4 SAM](#94-sam)
+    + [9.5 Passing the Hash](#95-passing-the-hash)
+  * [10. Scheduled Tasks](#10-scheduled-tasks)
+  * [11. Insecure GUI Apps](#11-insecure-gui-apps)
+  * [12. Starup Apps](#12-starup-apps)
+  * [13. Hot Potato](#13-hot-potato)
 
+
+
+# Windows Privilege Escalation
 
 ## 1.  Setup
 
