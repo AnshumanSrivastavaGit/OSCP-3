@@ -1,1 +1,1 @@
-[Potato](https://github.com/shashihacks/OSCP/blob/main/Proving%20Grounds/play/potato.md)
+[Potato](https://github.com/shashihacks/OSCP/blob/main/Proving%20Grounds/play/potato.md)[PHP type Juggling, Nice Binary]
