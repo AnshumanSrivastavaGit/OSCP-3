@@ -1,3 +1,56 @@
+
+
+
+### This Content is made from following resources
+
+
+
+
+1. <a href="https://tryhackme.com/room/windows10privesc"> Tryhackme - Windows Privilege Escalation for OSCP & beyond</a>
+
+
+
+2. <a href="https://www.udemy.com/course/windows-privilege-escalation/"> Udemy - Windows Privilege Escalation for OSCP & beyond</a>
+
+ <a href="https://foxglovesecurity.com/2016/01/16/hot-potato/">HotPotato</a>
+
+ 
+3. __The updated document can be found here: __   <a href="https://github.com/shashihacks/OSCP/tree/main/WIndows%20Privilege%20Escalation">Github</a>
+
+
+<br></br><br></br><br></br><br></br><br></br><br></br><br></br><br></br><br></br>
+
+<br></br><br></br><br></br><br></br><br></br><br></br><br></br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Windows Privilege Escalation
+
 - [Windows Privilege Escalation](#windows-privilege-escalation)
   * [1.  Setup](#1--setup)
   * [2. Accounts on Windows Machine](#2-accounts-on-windows-machine)
@@ -37,13 +90,13 @@
     + [14.4 getsystem](#144-getsystem)
 
 
+<br></br><br></br><br></br>
 
-# Windows Privilege Escalation
 
 ## 1.  Setup
 
 0. Downlaod [Windows 10](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/) VM. 
-1. download/use the tools provided , to kali machine
+1. download/use the tools provided <a href="here">https://github.com/shashihacks/OSCP/blob/main/WIndows%20Privilege%20Escalation/tools.zip</a> , to kali machine
 2. start the smb server(or any file transfer service) in kali (make sure to start in tools folder)
 ```bash
 ─$ sudo python3 /usr/share/doc/python3-impacket/examples/smbserver.py tools .
