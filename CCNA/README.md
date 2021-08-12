@@ -47,6 +47,25 @@ Auto MDI-X mode
 - Multimode fiber, supports over 150m and cheper than single mode but does support distances like 3 kilometers
 
 
+<hr>
+
+### OSI model & TCP/IP Suite
+
+Networking model
+- Networking models categorize and provide a structure for networking protocols
+
+
+Q: HTTP data has been encapsulated  with three separate headers and one trailer. what is the appropriate name for tthis PDU?
+- Frame
+
+Other options:
+- Packet refers to the OSI layer 3 PDU. It would have two headers(layer 4 header, layer 3 header) and no trailer
+- Segement refers to the OSI layer 4 PDU. It would have one header (layer 4 header), and no trailer.
+- Data, refers tio the upper layer data before being encapsulated. It would have no headers or trailers.
+
+ 
+Transport layer provides host to host communication
+
 
 
 
