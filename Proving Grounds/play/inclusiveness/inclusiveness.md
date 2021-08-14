@@ -119,7 +119,7 @@ cat local.txt
 ### Privilege escalation
 
 
-- Found a file ``rootshell.c` 
+- Found a file `rootshell.c` 
 ```c
 cat /home/tom/rootshell.c
 #include <stdio.h>
