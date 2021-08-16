@@ -5,6 +5,8 @@
 2. [Inclusiveness](./Proving%20Grounds/play/inclusiveness/inclusiveness.md)[LFI, Binary impersonation, Path hijacking]
 2. [Solstice](./Proving%20Grounds/play/solstice/solstice.md) [ LFI ]
 
+5. [FunBoxEasy](./Proving%20Grounds/play/FunBoxEasy/funboxeasy.md) [SQL Injection, GTFO Binaries, Time, pkexec mtr]
+
 
 ## Windows Privilege Escalation
 
