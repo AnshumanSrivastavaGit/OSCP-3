@@ -1,9 +1,9 @@
-### Shocker
+### Jerry
 
 #### Machine IP : 10.10.10.95
 Difficulty: Easy
 
-### Scanning
+## Scanning
 
 ### Nmap Scannig
 
