@@ -9,6 +9,7 @@
 
 ### Windows
 1. [Granny](./HTB/granny/granny.md) [ `HTTP verb tampering`, `PUT`, `MOVE`, `ms15_051_client_copy_image`, `IIS 6.0` ]
+2. [Grandpa](./HTB/grandpa/grandpa.md) [ `HTTP verb tampering`, `PUT`, `MOVE`, `ms14_070_tcpip_ioctl`, `IIS 6.0` ]
 
 
 
