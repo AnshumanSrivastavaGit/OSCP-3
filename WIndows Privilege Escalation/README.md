@@ -12,43 +12,9 @@
 
 2. <a href="https://www.udemy.com/course/windows-privilege-escalation/"> Udemy - Windows Privilege Escalation for OSCP & beyond</a>
 
- <a href="https://foxglovesecurity.com/2016/01/16/hot-potato/">HotPotato</a>
+3. <a href="https://foxglovesecurity.com/2016/01/16/hot-potato/">HotPotato</a>
 
  
-3. __The updated document can be found here: __   <a href="https://github.com/shashihacks/OSCP/tree/main/WIndows%20Privilege%20Escalation">Github</a>
-
-
-<br></br><br></br><br></br><br></br><br></br><br></br><br></br><br></br><br></br>
-
-<br></br><br></br><br></br><br></br><br></br><br></br><br></br>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Windows Privilege Escalation
 
 - [Windows Privilege Escalation](#windows-privilege-escalation)
