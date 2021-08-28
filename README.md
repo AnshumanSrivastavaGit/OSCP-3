@@ -3,24 +3,24 @@
 
 ### Linux
 
-1. [Bashed](./HTB/bashed/bashed.md) [ PHP Bash, Scheduled task ]
+1. [Bashed](./HTB/bashed/bashed.md) [ `PHP Bash`, `Scheduled task` ]
 
 
 
 ### Windows
-
+1. [Granny](./HTB/granny/granny.md) [ `HTTP verb tampering`, `PUT`, `MOVE`, `ms15_051_client_copy_image`, `IIS 6.0` ]
 
 
 
 
 ## Proving Grounds
 
-1. [Potato](./Proving%20Grounds/play/potato/potato.md) [ PHP type Juggling, `Nice` Binary ]
+1. [Potato](./Proving%20Grounds/play/potato/potato.md) [ `PHP type Juggling`, `Nice Binary` ]
 2. [Sars](./Proving%20Grounds/play/sars/sars.md) 
-2. [Inclusiveness](./Proving%20Grounds/play/inclusiveness/inclusiveness.md)[LFI, Binary impersonation, Path hijacking]
-2. [Solstice](./Proving%20Grounds/play/solstice/solstice.md) [ LFI ]
+2. [Inclusiveness](./Proving%20Grounds/play/inclusiveness/inclusiveness.md)[`LFI`, `Binary impersonation`, `Path hijacking`]
+2. [Solstice](./Proving%20Grounds/play/solstice/solstice.md) [ `LFI` ]
 
-5. [FunBoxEasy](./Proving%20Grounds/play/FunBoxEasy/funboxeasy.md) [SQL Injection, GTFO Binaries, `Time`, `pkexec`, `mtr`]
+5. [FunBoxEasy](./Proving%20Grounds/play/FunBoxEasy/funboxeasy.md) [`SQL Injection`,` GTFO Binaries`, `Time`, `pkexec`, `mtr`]
 
 
 
