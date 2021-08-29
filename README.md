@@ -4,6 +4,8 @@
 ### Linux
 
 1. [Bashed](./HTB/bashed/bashed.md) [ `PHP Bash`, `Scheduled task` ]
+1. [Popcorn](./HTB/popcorn/popcorn.md) [ `Image upload vulnerability`, `MOTD File Tampering` ]
+
 
 
 
@@ -22,6 +24,8 @@
 2. [Solstice](./Proving%20Grounds/play/solstice/solstice.md) [ `LFI` ]
 
 5. [FunBoxEasy](./Proving%20Grounds/play/FunBoxEasy/funboxeasy.md) [`SQL Injection`,` GTFO Binaries`, `Time`, `pkexec`, `mtr`]
+
+
 
 
 
