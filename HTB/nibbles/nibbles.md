@@ -1,7 +1,8 @@
 ## Nibbles
 
-Machine IP: 10.10.10.75 
-Difficulty: medium
+__Machine IP: 10.10.10.75__  
+
+__Difficulty: medium__
 
 
 
@@ -31,7 +32,7 @@ Nmap done: 1 IP address (1 host up) scanned in 22.32 seconds
 ```
 
 - Home Wegpage
-![hompeage](images/homepage.png)
+![hompeage](images/homepage.PNG)
 
 - on `view page source` found
 ```html
