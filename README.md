@@ -4,7 +4,8 @@
 ### Linux
 
 1. [Bashed](./HTB/bashed/bashed.md) [ `PHP Bash`, `Scheduled task` ]
-1. [Popcorn](./HTB/popcorn/popcorn.md) [ `Image upload vulnerability`, `MOTD File Tampering` ]
+2. [Popcorn](./HTB/popcorn/popcorn.md) [ `Image upload vulnerability`, `MOTD File Tampering` ]
+3. [Celestial](./HTB/celestail/celestail.md) [ `Node deserialization attack`, `Scheduled task,` `syslogs` ]
 
 
 
